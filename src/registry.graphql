@@ -1,0 +1,65 @@
+# Registry Events
+
+query GetChamberCreatedEvents($first: Int!, $skip: Int!) {
+  registry_ChamberCreatedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
+    id
+    chamber
+    seats
+    name
+    symbol
+    erc20Token
+    erc721Token
+  }
+}
+
+query GetInitializedEvents($first: Int!, $skip: Int!) {
+  registry_InitializedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
+    id
+    version
+  }
+}
+
+query GetRoleAdminChangedEvents($first: Int!, $skip: Int!, $role: String) {
+  registry_RoleAdminChangedEvents(
+    first: $first
+    skip: $skip
+    where: { role: $role }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    role
+    previousAdminRole
+    newAdminRole
+  }
+}
+
+query GetRoleGrantedEvents($first: Int!, $skip: Int!, $account: String) {
+  registry_RoleGrantedEvents(
+    first: $first
+    skip: $skip
+    where: { account: $account }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    role
+    account
+    sender
+  }
+}
+
+query GetRoleRevokedEvents($first: Int!, $skip: Int!, $account: String) {
+  registry_RoleRevokedEvents(
+    first: $first
+    skip: $skip
+    where: { account: $account }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    role
+    account
+    sender
+  }
+} 

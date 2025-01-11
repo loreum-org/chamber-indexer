@@ -1,0 +1,253 @@
+# Chamber Events
+
+query GetApprovalEvents($first: Int!, $skip: Int!, $owner: String, $spender: String) {
+  chamber_ApprovalEvents(
+    first: $first
+    skip: $skip
+    where: { owner: $owner, spender: $spender }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    owner
+    spender
+    value
+  }
+}
+
+query GetConfirmTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_ConfirmTransactionEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    nonce
+  }
+}
+
+query GetDelegateEvents($first: Int!, $skip: Int!, $sender: String) {
+  chamber_DelegateEvents(
+    first: $first
+    skip: $skip
+    where: { sender: $sender }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    sender
+    tokenId
+    amount
+  }
+}
+
+query GetDelegationUpdatedEvents($first: Int!, $skip: Int!, $agent: String) {
+  chamber_DelegationUpdatedEvents(
+    first: $first
+    skip: $skip
+    where: { agent: $agent }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    agent
+    tokenId
+    amount
+  }
+}
+
+query GetDepositEvents($first: Int!, $skip: Int!, $owner: String) {
+  chamber_DepositEvents(
+    first: $first
+    skip: $skip
+    where: { owner: $owner }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    sender
+    owner
+    assets
+    shares
+  }
+}
+
+query GetDirectorshipChangedEvents($first: Int!, $skip: Int!, $account: String) {
+  chamber_DirectorshipChangedEvents(
+    first: $first
+    skip: $skip
+    where: { account: $account }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    account
+    tokenId
+    isDirector
+  }
+}
+
+query GetExecuteSetSeatsEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_ExecuteSetSeatsEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    seats
+  }
+}
+
+query GetExecuteTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_ExecuteTransactionEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    nonce
+  }
+}
+
+query GetInitializedEvents($first: Int!, $skip: Int!) {
+  chamber_InitializedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
+    id
+    version
+  }
+}
+
+query GetQuorumUpdatedEvents($first: Int!, $skip: Int!) {
+  chamber_QuorumUpdatedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
+    id
+    oldQuorum
+    newQuorum
+  }
+}
+
+query GetReceivedEvents($first: Int!, $skip: Int!, $sender: String) {
+  chamber_ReceivedEvents(
+    first: $first
+    skip: $skip
+    where: { sender: $sender }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    sender
+    amount
+  }
+}
+
+query GetRevokeConfirmationEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_RevokeConfirmationEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    nonce
+  }
+}
+
+query GetSeatUpdateCancelledEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_SeatUpdateCancelledEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+  }
+}
+
+query GetSetSeatsEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_SetSeatsEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    numOfSeats
+  }
+}
+
+query GetSubmitTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
+  chamber_SubmitTransactionEvents(
+    first: $first
+    skip: $skip
+    where: { tokenId: $tokenId }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    tokenId
+    nonce
+    to
+    value
+    data
+  }
+}
+
+query GetTransferEvents($first: Int!, $skip: Int!, $from: String, $to: String) {
+  chamber_TransferEvents(
+    first: $first
+    skip: $skip
+    where: { from: $from, to: $to }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    from
+    to
+    value
+  }
+}
+
+query GetUndelegateEvents($first: Int!, $skip: Int!, $sender: String) {
+  chamber_UndelegateEvents(
+    first: $first
+    skip: $skip
+    where: { sender: $sender }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    sender
+    tokenId
+    amount
+  }
+}
+
+query GetWithdrawEvents($first: Int!, $skip: Int!, $owner: String) {
+  chamber_WithdrawEvents(
+    first: $first
+    skip: $skip
+    where: { owner: $owner }
+    orderBy: "blockNumber"
+    orderDirection: "desc"
+  ) {
+    id
+    sender
+    receiver
+    owner
+    assets
+    shares
+  }
+} 

@@ -3,11 +3,11 @@ import { createConfig, factory } from "ponder";
 
 import { http } from "viem";
 
-import { LlamaCoreAbi } from "./abis/LlamaCoreAbi";
-import { LlamaPolicyAbi } from "./abis/LlamaPolicyAbi";
+import { RegistryAbi } from "./abis/RegistryAbi";
+import { ChamberAbi } from "./abis/ChamberAbi";
 
-const llamaFactoryEvent = parseAbiItem(
-  "event LlamaInstanceCreated(address indexed deployer, string indexed name, address llamaCore, address llamaExecutor, address llamaPolicy, uint256 chainId)",
+const chamberCreatedEvent = parseAbiItem(
+  "event ChamberCreated(address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token)",
 );
 
 export default createConfig({
@@ -18,25 +18,27 @@ export default createConfig({
     },
   },
   contracts: {
-    LlamaCore: {
-      network: "sepolia",
-      abi: LlamaCoreAbi,
-      address: factory({
-        address: "0xFf5d4E226D9A3496EECE31083a8F493edd79AbEB",
-        event: llamaFactoryEvent,
-        parameter: "llamaCore",
-      }),
-      startBlock: 4121269,
+    Registry: {
+      abi: RegistryAbi,
+      network: {
+        sepolia: {
+          address: "0xB028110234375A368Aa0b5fFB138ae1dDfb0b4cc",
+        }
+      },
+      startBlock: 7453704,
     },
-    LlamaPolicy: {
-      network: "sepolia",
-      abi: LlamaPolicyAbi,
-      address: factory({
-        address: "0xFf5d4E226D9A3496EECE31083a8F493edd79AbEB",
-        event: llamaFactoryEvent,
-        parameter: "llamaPolicy",
-      }),
-      startBlock: 4121269,
+    Chamber: {
+      abi: ChamberAbi,
+      network: {
+        sepolia: {
+          address: factory({
+            address: "0xB028110234375A368Aa0b5fFB138ae1dDfb0b4cc",
+            event: chamberCreatedEvent,
+            parameter: "chamber",
+          }),
+        }
+      },
+      startBlock: 7453704,
     },
   },
 });

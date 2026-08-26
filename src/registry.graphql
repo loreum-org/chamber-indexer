@@ -1,65 +1,72 @@
-# Registry Events
+# Registry / Factory creation events
 
-query GetChamberCreatedEvents($first: Int!, $skip: Int!) {
-  registry_ChamberCreatedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
-    id
-    chamber
-    seats
-    name
-    symbol
-    erc20Token
-    erc721Token
+query GetRegistryChamberCreatedEvents($limit: Int) {
+  registry_ChamberCreateds(limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      chamber
+      seats
+      name
+      symbol
+      erc20Token
+      erc721Token
+    }
   }
 }
 
-query GetInitializedEvents($first: Int!, $skip: Int!) {
-  registry_InitializedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
-    id
-    version
+query GetFactoryChamberCreatedEvents($limit: Int, $creator: String) {
+  factory_ChamberCreateds(where: { creator: $creator }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      chamber
+      asset
+      nft
+      seats
+      name
+      symbol
+      creator
+    }
   }
 }
 
-query GetRoleAdminChangedEvents($first: Int!, $skip: Int!, $role: String) {
-  registry_RoleAdminChangedEvents(
-    first: $first
-    skip: $skip
-    where: { role: $role }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    role
-    previousAdminRole
-    newAdminRole
+query GetInitializedEvents($limit: Int) {
+  registry_Initializeds(limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      version
+    }
   }
 }
 
-query GetRoleGrantedEvents($first: Int!, $skip: Int!, $account: String) {
-  registry_RoleGrantedEvents(
-    first: $first
-    skip: $skip
-    where: { account: $account }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    role
-    account
-    sender
+query GetRoleAdminChangedEvents($limit: Int, $role: String) {
+  registry_RoleAdminChangeds(where: { role: $role }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      previousAdminRole
+      newAdminRole
+    }
   }
 }
 
-query GetRoleRevokedEvents($first: Int!, $skip: Int!, $account: String) {
-  registry_RoleRevokedEvents(
-    first: $first
-    skip: $skip
-    where: { account: $account }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    role
-    account
-    sender
+query GetRoleGrantedEvents($limit: Int, $account: String) {
+  registry_RoleGranteds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      account
+      sender
+    }
   }
-} 
+}
+
+query GetRoleRevokedEvents($limit: Int, $account: String) {
+  registry_RoleRevokeds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      account
+      sender
+    }
+  }
+}

@@ -1,13 +1,17 @@
 import { ponder } from "ponder:registry";
-import { 
-  registry_ChamberCreated, 
-  registry_Initialized, 
-  registry_RoleAdminChanged, 
-  registry_RoleGranted, 
-  registry_RoleRevoked, 
+import {
+  registry_ChamberCreated,
+  registry_Initialized,
+  registry_RoleAdminChanged,
+  registry_RoleGranted,
+  registry_RoleRevoked,
 } from "ponder:schema";
 
+import { asHex, upsertChamber } from "./lib/directory";
+
 ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
+  const address = asHex(event.args.chamber);
+
   await context.db.insert(registry_ChamberCreated).values({
     id: event.log.id,
     chamber: event.args.chamber,
@@ -16,6 +20,21 @@ ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
     symbol: event.args.symbol,
     erc20Token: event.args.erc20Token,
     erc721Token: event.args.erc721Token,
+  });
+
+  // Legacy event has no creator; createChamber is called by the deployer EOA.
+  await upsertChamber(context.db, {
+    id: address,
+    address,
+    asset: asHex(event.args.erc20Token),
+    nft: asHex(event.args.erc721Token),
+    seats: event.args.seats,
+    name: event.args.name,
+    symbol: event.args.symbol,
+    creator: asHex(event.transaction.from),
+    source: "registry",
+    createdBlock: event.block.number,
+    createdAt: event.block.timestamp,
   });
 });
 

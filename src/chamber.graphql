@@ -1,253 +1,172 @@
-# Chamber Events
+# Chamber event queries (Ponder 0.8: limit / items, not first / skip)
 
-query GetApprovalEvents($first: Int!, $skip: Int!, $owner: String, $spender: String) {
-  chamber_ApprovalEvents(
-    first: $first
-    skip: $skip
-    where: { owner: $owner, spender: $spender }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    owner
-    spender
-    value
+query GetApprovalEvents($limit: Int, $owner: String, $spender: String) {
+  chamber_Approvals(where: { owner: $owner, spender: $spender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      owner
+      spender
+      value
+    }
   }
 }
 
-query GetConfirmTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_ConfirmTransactionEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    nonce
+query GetConfirmTransactionEvents($limit: Int, $tokenId: BigInt) {
+  chamber_ConfirmTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      nonce
+    }
   }
 }
 
-query GetDelegateEvents($first: Int!, $skip: Int!, $sender: String) {
-  chamber_DelegateEvents(
-    first: $first
-    skip: $skip
-    where: { sender: $sender }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    sender
-    tokenId
-    amount
+query GetDelegateEvents($limit: Int, $sender: String) {
+  chamber_Delegates(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      sender
+      tokenId
+      amount
+    }
   }
 }
 
-query GetDelegationUpdatedEvents($first: Int!, $skip: Int!, $agent: String) {
-  chamber_DelegationUpdatedEvents(
-    first: $first
-    skip: $skip
-    where: { agent: $agent }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    agent
-    tokenId
-    amount
+query GetDelegationUpdatedEvents($limit: Int, $holder: String) {
+  chamber_DelegationUpdateds(where: { holder: $holder }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      holder
+      tokenId
+      amount
+    }
   }
 }
 
-query GetDepositEvents($first: Int!, $skip: Int!, $owner: String) {
-  chamber_DepositEvents(
-    first: $first
-    skip: $skip
-    where: { owner: $owner }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    sender
-    owner
-    assets
-    shares
+query GetDepositEvents($limit: Int, $owner: String) {
+  chamber_Deposits(where: { owner: $owner }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      sender
+      owner
+      assets
+      shares
+    }
   }
 }
 
-query GetDirectorshipChangedEvents($first: Int!, $skip: Int!, $account: String) {
-  chamber_DirectorshipChangedEvents(
-    first: $first
-    skip: $skip
-    where: { account: $account }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    account
-    tokenId
-    isDirector
+query GetExecuteSetSeatsEvents($limit: Int, $tokenId: BigInt) {
+  chamber_ExecuteSetSeatss(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      seats
+    }
   }
 }
 
-query GetExecuteSetSeatsEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_ExecuteSetSeatsEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    seats
+query GetExecuteTransactionEvents($limit: Int, $tokenId: BigInt) {
+  chamber_ExecuteTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      nonce
+    }
   }
 }
 
-query GetExecuteTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_ExecuteTransactionEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    nonce
+query GetInitializedEvents($limit: Int) {
+  chamber_Initializeds(limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      version
+    }
   }
 }
 
-query GetInitializedEvents($first: Int!, $skip: Int!) {
-  chamber_InitializedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
-    id
-    version
+query GetReceivedEvents($limit: Int, $sender: String) {
+  chamber_Receiveds(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      sender
+      amount
+    }
   }
 }
 
-query GetQuorumUpdatedEvents($first: Int!, $skip: Int!) {
-  chamber_QuorumUpdatedEvents(first: $first, skip: $skip, orderBy: "blockNumber", orderDirection: "desc") {
-    id
-    oldQuorum
-    newQuorum
+query GetRevokeConfirmationEvents($limit: Int, $tokenId: BigInt) {
+  chamber_RevokeConfirmations(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      nonce
+    }
   }
 }
 
-query GetReceivedEvents($first: Int!, $skip: Int!, $sender: String) {
-  chamber_ReceivedEvents(
-    first: $first
-    skip: $skip
-    where: { sender: $sender }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    sender
-    amount
+query GetSeatUpdateCancelledEvents($limit: Int, $tokenId: BigInt) {
+  chamber_SeatUpdateCancelleds(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+    }
   }
 }
 
-query GetRevokeConfirmationEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_RevokeConfirmationEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    nonce
+query GetSetSeatsEvents($limit: Int, $tokenId: BigInt) {
+  chamber_SetSeatss(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      numOfSeats
+    }
   }
 }
 
-query GetSeatUpdateCancelledEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_SeatUpdateCancelledEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
+query GetSubmitTransactionEvents($limit: Int, $tokenId: BigInt) {
+  chamber_SubmitTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      tokenId
+      nonce
+      to
+      value
+      data
+    }
   }
 }
 
-query GetSetSeatsEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_SetSeatsEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    numOfSeats
+query GetTransferEvents($limit: Int, $from: String, $to: String) {
+  chamber_Transfers(where: { from: $from, to: $to }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      from
+      to
+      value
+    }
   }
 }
 
-query GetSubmitTransactionEvents($first: Int!, $skip: Int!, $tokenId: BigInt) {
-  chamber_SubmitTransactionEvents(
-    first: $first
-    skip: $skip
-    where: { tokenId: $tokenId }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    tokenId
-    nonce
-    to
-    value
-    data
+query GetUndelegateEvents($limit: Int, $sender: String) {
+  chamber_Undelegates(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      sender
+      tokenId
+      amount
+    }
   }
 }
 
-query GetTransferEvents($first: Int!, $skip: Int!, $from: String, $to: String) {
-  chamber_TransferEvents(
-    first: $first
-    skip: $skip
-    where: { from: $from, to: $to }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    from
-    to
-    value
+query GetWithdrawEvents($limit: Int, $owner: String) {
+  chamber_Withdraws(where: { owner: $owner }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      sender
+      receiver
+      owner
+      assets
+      shares
+    }
   }
 }
-
-query GetUndelegateEvents($first: Int!, $skip: Int!, $sender: String) {
-  chamber_UndelegateEvents(
-    first: $first
-    skip: $skip
-    where: { sender: $sender }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    sender
-    tokenId
-    amount
-  }
-}
-
-query GetWithdrawEvents($first: Int!, $skip: Int!, $owner: String) {
-  chamber_WithdrawEvents(
-    first: $first
-    skip: $skip
-    where: { owner: $owner }
-    orderBy: "blockNumber"
-    orderDirection: "desc"
-  ) {
-    id
-    sender
-    receiver
-    owner
-    assets
-    shares
-  }
-} 

@@ -1,9 +1,69 @@
-import { onchainTable, index } from "ponder";
+import { index, onchainEnum, onchainTable, primaryKey, relations } from "ponder";
+
+export const chamberSource = onchainEnum("chamber_source", [
+  "factory",
+  "registry",
+]);
+
+/**
+ * First-class Chamber directory row. Populated from Registry and Factory
+ * ChamberCreated. “Mine” is creator on this table OR a chamber_holder row
+ * with shares > 0. Directors are omitted in v1 (getDirectors is on-chain
+ * only; DelegationUpdated is holder→tokenId weight, not NFT ownership).
+ */
+export const chamber = onchainTable(
+  "chamber",
+  (t) => ({
+    id: t.hex().primaryKey(),
+    address: t.hex().notNull(),
+    asset: t.hex().notNull(),
+    nft: t.hex().notNull(),
+    seats: t.bigint().notNull(),
+    name: t.text().notNull(),
+    symbol: t.text().notNull(),
+    creator: t.hex().notNull(),
+    source: chamberSource().notNull(),
+    createdBlock: t.bigint().notNull(),
+    createdAt: t.bigint().notNull(),
+  }),
+  (table) => ({
+    creatorIdx: index().on(table.creator),
+    sourceIdx: index().on(table.source),
+    assetIdx: index().on(table.asset),
+  }),
+);
+
+/** Current share balance per account, reconstructed from ERC-20 Transfer. */
+export const chamberHolder = onchainTable(
+  "chamber_holder",
+  (t) => ({
+    chamberId: t.hex().notNull(),
+    account: t.hex().notNull(),
+    shares: t.bigint().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({ columns: [table.chamberId, table.account] }),
+    accountIdx: index().on(table.account),
+    chamberIdx: index().on(table.chamberId),
+  }),
+);
+
+export const chamberRelations = relations(chamber, ({ many }) => ({
+  holders: many(chamberHolder),
+}));
+
+export const chamberHolderRelations = relations(chamberHolder, ({ one }) => ({
+  chamber: one(chamber, {
+    fields: [chamberHolder.chamberId],
+    references: [chamber.id],
+  }),
+}));
 
 // Registry
+
 export const registry_ChamberCreated = onchainTable(
-  "chamber_created_event", // SQL table name
-  (t) => ({ // Column definitions
+  "chamber_created_event",
+  (t) => ({
     id: t.text().primaryKey(),
     chamber: t.text().notNull(),
     seats: t.bigint().notNull(),
@@ -12,9 +72,27 @@ export const registry_ChamberCreated = onchainTable(
     erc20Token: t.text().notNull(),
     erc721Token: t.text().notNull(),
   }),
-  (table) => ({  // Constraints & indexes
+  (table) => ({
     chamberIdx: index().on(table.chamber),
-  })
+  }),
+);
+
+export const factory_ChamberCreated = onchainTable(
+  "factory_chamber_created_event",
+  (t) => ({
+    id: t.text().primaryKey(),
+    chamber: t.hex().notNull(),
+    asset: t.hex().notNull(),
+    nft: t.hex().notNull(),
+    seats: t.bigint().notNull(),
+    name: t.text().notNull(),
+    symbol: t.text().notNull(),
+    creator: t.hex().notNull(),
+  }),
+  (table) => ({
+    chamberIdx: index().on(table.chamber),
+    creatorIdx: index().on(table.creator),
+  }),
 );
 
 export const registry_Initialized = onchainTable(
@@ -22,7 +100,7 @@ export const registry_Initialized = onchainTable(
   (t) => ({
     id: t.text().primaryKey(),
     version: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const registry_RoleAdminChanged = onchainTable(
@@ -35,7 +113,7 @@ export const registry_RoleAdminChanged = onchainTable(
   }),
   (table) => ({
     roleIdx: index().on(table.role),
-  })
+  }),
 );
 
 export const registry_RoleGranted = onchainTable(
@@ -49,7 +127,7 @@ export const registry_RoleGranted = onchainTable(
   (table) => ({
     roleIdx: index().on(table.role),
     accountIdx: index().on(table.account),
-  })
+  }),
 );
 
 export const registry_RoleRevoked = onchainTable(
@@ -63,10 +141,10 @@ export const registry_RoleRevoked = onchainTable(
   (table) => ({
     roleIdx: index().on(table.role),
     accountIdx: index().on(table.account),
-  })
+  }),
 );
 
-// Chamber
+// Chamber events (live names only; DirectorshipChanged / QuorumUpdated dropped)
 
 export const chamber_Approval = onchainTable(
   "chamber_approval_event",
@@ -79,7 +157,7 @@ export const chamber_Approval = onchainTable(
   (table) => ({
     ownerIdx: index().on(table.owner),
     spenderIdx: index().on(table.spender),
-  })
+  }),
 );
 
 export const chamber_ConfirmTransaction = onchainTable(
@@ -88,7 +166,7 @@ export const chamber_ConfirmTransaction = onchainTable(
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
     nonce: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_Delegate = onchainTable(
@@ -101,20 +179,20 @@ export const chamber_Delegate = onchainTable(
   }),
   (table) => ({
     senderIdx: index().on(table.sender),
-  })
+  }),
 );
 
 export const chamber_DelegationUpdated = onchainTable(
   "chamber_delegation_updated_event",
   (t) => ({
     id: t.text().primaryKey(),
-    agent: t.text().notNull(),
+    holder: t.text().notNull(),
     tokenId: t.bigint().notNull(),
     amount: t.bigint().notNull(),
   }),
   (table) => ({
-    agentIdx: index().on(table.agent),
-  })
+    holderIdx: index().on(table.holder),
+  }),
 );
 
 export const chamber_Deposit = onchainTable(
@@ -129,20 +207,7 @@ export const chamber_Deposit = onchainTable(
   (table) => ({
     senderIdx: index().on(table.sender),
     ownerIdx: index().on(table.owner),
-  })
-);
-
-export const chamber_DirectorshipChanged = onchainTable(
-  "chamber_directorship_changed_event",
-  (t) => ({
-    id: t.text().primaryKey(),
-    account: t.text().notNull(),
-    tokenId: t.bigint().notNull(),
-    isDirector: t.boolean().notNull(),
   }),
-  (table) => ({
-    accountIdx: index().on(table.account),
-  })
 );
 
 export const chamber_ExecuteSetSeats = onchainTable(
@@ -151,7 +216,7 @@ export const chamber_ExecuteSetSeats = onchainTable(
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
     seats: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_ExecuteTransaction = onchainTable(
@@ -160,7 +225,7 @@ export const chamber_ExecuteTransaction = onchainTable(
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
     nonce: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_Initialized = onchainTable(
@@ -168,16 +233,7 @@ export const chamber_Initialized = onchainTable(
   (t) => ({
     id: t.text().primaryKey(),
     version: t.bigint().notNull(),
-  })
-);
-
-export const chamber_QuorumUpdated = onchainTable(
-  "chamber_quorum_updated_event",
-  (t) => ({
-    id: t.text().primaryKey(),
-    oldQuorum: t.bigint().notNull(),
-    newQuorum: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_Received = onchainTable(
@@ -189,7 +245,7 @@ export const chamber_Received = onchainTable(
   }),
   (table) => ({
     senderIdx: index().on(table.sender),
-  })
+  }),
 );
 
 export const chamber_RevokeConfirmation = onchainTable(
@@ -198,7 +254,7 @@ export const chamber_RevokeConfirmation = onchainTable(
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
     nonce: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_SeatUpdateCancelled = onchainTable(
@@ -206,7 +262,7 @@ export const chamber_SeatUpdateCancelled = onchainTable(
   (t) => ({
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_SetSeats = onchainTable(
@@ -215,7 +271,7 @@ export const chamber_SetSeats = onchainTable(
     id: t.text().primaryKey(),
     tokenId: t.bigint().notNull(),
     numOfSeats: t.bigint().notNull(),
-  })
+  }),
 );
 
 export const chamber_SubmitTransaction = onchainTable(
@@ -230,7 +286,7 @@ export const chamber_SubmitTransaction = onchainTable(
   }),
   (table) => ({
     toIdx: index().on(table.to),
-  })
+  }),
 );
 
 export const chamber_Transfer = onchainTable(
@@ -244,7 +300,7 @@ export const chamber_Transfer = onchainTable(
   (table) => ({
     fromIdx: index().on(table.from),
     toIdx: index().on(table.to),
-  })
+  }),
 );
 
 export const chamber_Undelegate = onchainTable(
@@ -257,7 +313,7 @@ export const chamber_Undelegate = onchainTable(
   }),
   (table) => ({
     senderIdx: index().on(table.sender),
-  })
+  }),
 );
 
 export const chamber_Withdraw = onchainTable(
@@ -274,6 +330,5 @@ export const chamber_Withdraw = onchainTable(
     senderIdx: index().on(table.sender),
     receiverIdx: index().on(table.receiver),
     ownerIdx: index().on(table.owner),
-  })
+  }),
 );
-

@@ -72,10 +72,14 @@ Changing Registry/Factory address or start block creates new Ponder filters, so 
 ```bash
 cp .env.example .env.local   # set PONDER_RPC_URL_11155111
 pnpm install
-pnpm dev                     # or pnpm start
+pnpm dev                     # or: pnpm start --schema local
 ```
 
+`ponder start` requires `--schema` or `DATABASE_SCHEMA` (Ponder 0.8). Production already sets this.
+
 `GET /health` and `GET /ready` are Ponder’s process probes (200 with an empty body). Use GraphQL `_meta.status.sepolia.ready` for sync.
+
+Verified in this change with `PONDER_RPC_URL_11155111=https://gateway.tenderly.co/public/sepolia` and `pnpm start --schema local`: historical sync finished in ~8s, `registry_ChamberCreateds.totalCount` = 5, `chambers.totalCount` = 5, `factory_ChamberCreateds.totalCount` = 0.
 
 ## Out of scope
 

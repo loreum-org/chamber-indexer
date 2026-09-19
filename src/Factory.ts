@@ -2,6 +2,7 @@ import { ponder } from "ponder:registry";
 import { factory_ChamberCreated } from "ponder:schema";
 
 import { asHex, upsertChamber } from "./lib/directory";
+import { refreshNewChamber } from "./lib/state";
 
 ponder.on("Factory:ChamberCreated", async ({ context, event }) => {
   const address = asHex(event.args.chamber);
@@ -29,5 +30,10 @@ ponder.on("Factory:ChamberCreated", async ({ context, event }) => {
     source: "factory",
     createdBlock: event.block.number,
     createdAt: event.block.timestamp,
+  });
+
+  await refreshNewChamber(context, address, {
+    number: event.block.number,
+    timestamp: event.block.timestamp,
   });
 });

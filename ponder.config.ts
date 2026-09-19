@@ -4,6 +4,7 @@ import type { Address } from "viem";
 import { http, isAddress } from "viem";
 
 import { ChamberAbi } from "./abis/ChamberAbi";
+import { Erc721Abi } from "./abis/Erc721Abi";
 import { FactoryAbi } from "./abis/FactoryAbi";
 import { RegistryAbi } from "./abis/RegistryAbi";
 
@@ -150,6 +151,34 @@ export default createConfig({
             address: factoryAddress,
             event: factoryChamberCreatedEvent,
             parameter: "chamber",
+          }),
+          startBlock: factoryStartBlock,
+        },
+      },
+      startBlock: factoryStartBlock,
+    },
+    // Membership NFTs: seat owners change on ERC-721 Transfer with no Chamber event.
+    RegistryNft: {
+      abi: Erc721Abi,
+      network: {
+        sepolia: {
+          address: factory({
+            address: registryAddress,
+            event: registryChamberCreatedEvent,
+            parameter: "erc721Token",
+          }),
+        },
+      },
+      startBlock: registryStartBlock,
+    },
+    FactoryNft: {
+      abi: Erc721Abi,
+      network: {
+        sepolia: {
+          address: factory({
+            address: factoryAddress,
+            event: factoryChamberCreatedEvent,
+            parameter: "nft",
           }),
           startBlock: factoryStartBlock,
         },

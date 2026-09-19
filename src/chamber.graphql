@@ -1,172 +1,122 @@
-# Chamber event queries (Ponder 0.8: limit / items, not first / skip)
+# Chamber state queries (Ponder 0.8: limit / items, not first / skip).
+# Ids are lowercase hex. Select `_meta { status }` to get the indexed head
+# (block number + timestamp) for freshness and time-based checks.
 
-query GetApprovalEvents($limit: Int, $owner: String, $spender: String) {
-  chamber_Approvals(where: { owner: $owner, spender: $spender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query ChamberState($chamber: String!) {
+  chamber(id: $chamber) {
+    address
+    name
+    symbol
+    asset
+    nft
+    decimals
+    seats
+    quorum
+    boardSize
+    reachableDirectors
+    transactionCount
+    totalAssets
+    totalSupply
+    ethBalance
+    paused
+    implementation
+    version
+    updatedBlock
+  }
+  seatUpdate(chamberId: $chamber) {
+    proposedSeats
+    timestamp
+    requiredQuorum
+    supporters
+  }
+  _meta {
+    status
+  }
+}
+
+# Ranked board. Top seats are rank < chamber.seats; directors are their owners.
+query ChamberBoard($chamber: String!) {
+  boardSeats(where: { chamberId: $chamber }, orderBy: "rank", orderDirection: "asc", limit: 1000) {
     items {
-      id
+      tokenId
+      rank
+      amount
       owner
-      spender
-      value
+      seatedAt
     }
+  }
+  _meta {
+    status
   }
 }
 
-query GetConfirmTransactionEvents($limit: Int, $tokenId: BigInt) {
-  chamber_ConfirmTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query ChamberProposals($chamber: String!) {
+  proposals(where: { chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: 1000) {
     items {
-      id
-      tokenId
       nonce
-    }
-  }
-}
-
-query GetDelegateEvents($limit: Int, $sender: String) {
-  chamber_Delegates(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      sender
-      tokenId
-      amount
-    }
-  }
-}
-
-query GetDelegationUpdatedEvents($limit: Int, $holder: String) {
-  chamber_DelegationUpdateds(where: { holder: $holder }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      holder
-      tokenId
-      amount
-    }
-  }
-}
-
-query GetDepositEvents($limit: Int, $owner: String) {
-  chamber_Deposits(where: { owner: $owner }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      sender
-      owner
-      assets
-      shares
-    }
-  }
-}
-
-query GetExecuteSetSeatsEvents($limit: Int, $tokenId: BigInt) {
-  chamber_ExecuteSetSeatss(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-      seats
-    }
-  }
-}
-
-query GetExecuteTransactionEvents($limit: Int, $tokenId: BigInt) {
-  chamber_ExecuteTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-      nonce
-    }
-  }
-}
-
-query GetInitializedEvents($limit: Int) {
-  chamber_Initializeds(limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      version
-    }
-  }
-}
-
-query GetReceivedEvents($limit: Int, $sender: String) {
-  chamber_Receiveds(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      sender
-      amount
-    }
-  }
-}
-
-query GetRevokeConfirmationEvents($limit: Int, $tokenId: BigInt) {
-  chamber_RevokeConfirmations(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-      nonce
-    }
-  }
-}
-
-query GetSeatUpdateCancelledEvents($limit: Int, $tokenId: BigInt) {
-  chamber_SeatUpdateCancelleds(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-    }
-  }
-}
-
-query GetSetSeatsEvents($limit: Int, $tokenId: BigInt) {
-  chamber_SetSeatss(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-      numOfSeats
-    }
-  }
-}
-
-query GetSubmitTransactionEvents($limit: Int, $tokenId: BigInt) {
-  chamber_SubmitTransactions(where: { tokenId: $tokenId }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      tokenId
-      nonce
-      to
+      proposerTokenId
+      target
       value
       data
+      dataHash
+      metadataURI
+      deadline
+      requiredQuorum
+      confirmations
+      cancelConfirmations
+      executed
+      cancelled
+      submittedAt
+      submittedTx
+      executedTx
     }
+  }
+  proposalVotes(where: { chamberId: $chamber }, limit: 1000) {
+    items {
+      nonce
+      tokenId
+      confirmed
+      cancelVoted
+    }
+  }
+  _meta {
+    status
   }
 }
 
-query GetTransferEvents($limit: Int, $from: String, $to: String) {
-  chamber_Transfers(where: { from: $from, to: $to }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query HolderDelegations($chamber: String!, $holder: String!) {
+  delegations(where: { chamberId: $chamber, holder: $holder, amount_gt: "0" }) {
     items {
-      id
-      from
-      to
-      value
-    }
-  }
-}
-
-query GetUndelegateEvents($limit: Int, $sender: String) {
-  chamber_Undelegates(where: { sender: $sender }, limit: $limit, orderBy: "id", orderDirection: "desc") {
-    items {
-      id
-      sender
       tokenId
       amount
     }
   }
+  chamberHolder(chamberId: $chamber, account: $holder) {
+    shares
+  }
 }
 
-query GetWithdrawEvents($limit: Int, $owner: String) {
-  chamber_Withdraws(where: { owner: $owner }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query DirectorOperators($chamber: String!) {
+  directorOperators(where: { chamberId: $chamber }) {
     items {
-      id
-      sender
-      receiver
+      tokenId
       owner
-      assets
-      shares
+      operator
+      expiry
+      scope
+      liveAt
+    }
+  }
+}
+
+query ChamberActivity($chamber: String!, $limit: Int) {
+  chamberEvents(where: { chamberId: $chamber }, orderBy: "blockNumber", orderDirection: "desc", limit: $limit) {
+    items {
+      name
+      args
+      blockNumber
+      timestamp
+      txHash
     }
   }
 }

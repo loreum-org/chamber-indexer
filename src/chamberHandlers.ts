@@ -1,264 +1,191 @@
-import type { Context, Event } from "ponder:registry";
+import { ponder } from "ponder:registry";
+import { chamberEvent } from "ponder:schema";
+import type { Hex } from "viem";
+
+import { applyShareTransfer } from "./lib/directory";
 import {
-  chamber_Approval,
-  chamber_ConfirmTransaction,
-  chamber_Delegate,
-  chamber_DelegationUpdated,
-  chamber_Deposit,
-  chamber_ExecuteSetSeats,
-  chamber_ExecuteTransaction,
-  chamber_Initialized,
-  chamber_Received,
-  chamber_RevokeConfirmation,
-  chamber_SeatUpdateCancelled,
-  chamber_SetSeats,
-  chamber_SubmitTransaction,
-  chamber_Transfer,
-  chamber_Undelegate,
-  chamber_Withdraw,
-} from "ponder:schema";
+  asHex,
+  refreshBoard,
+  refreshChamber,
+  refreshDelegation,
+  refreshOperator,
+  refreshProposal,
+  refreshSeatUpdate,
+  refreshVote,
+  type Address,
+  type BlockRef,
+  type Ctx,
+} from "./lib/state";
 
-import { applyShareTransfer, asHex } from "./lib/directory";
+/**
+ * Registry- and Factory-discovered chambers share one ABI but are two Ponder
+ * contracts (0.8 allows one factory() per contract), so handlers are
+ * registered once per source name.
+ */
+type ChamberSource = "Chamber" | "FactoryChamber";
 
-export async function handleApproval({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Approval">;
-  event: Event<"Chamber:Approval">;
-}) {
-  await context.db.insert(chamber_Approval).values({
-    id: event.log.id,
-    owner: event.args.owner,
-    spender: event.args.spender,
-    value: event.args.value,
-  });
+type AnyEvent = {
+  name: string;
+  args: Record<string, unknown>;
+  log: { id: string; address: string; logIndex: number };
+  block: { number: bigint; timestamp: bigint };
+  transaction: { hash: Hex };
+};
+
+type Handler = (context: Ctx, chamber: Address, event: AnyEvent, block: BlockRef) => Promise<void>;
+
+const big = (v: unknown) => v as bigint;
+const addr = (v: unknown) => asHex(v as string);
+
+async function refreshBoardState(context: Ctx, chamber: Address, block: BlockRef) {
+  await refreshBoard(context, chamber, block);
+  await refreshChamber(context, chamber, block);
 }
 
-export async function handleConfirmTransaction({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:ConfirmTransaction">;
-  event: Event<"Chamber:ConfirmTransaction">;
-}) {
-  await context.db.insert(chamber_ConfirmTransaction).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    nonce: event.args.nonce,
-  });
+async function refreshSeatState(context: Ctx, chamber: Address, block: BlockRef) {
+  await refreshSeatUpdate(context, chamber, block);
+  await refreshBoardState(context, chamber, block);
 }
 
-export async function handleDelegate({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Delegate">;
-  event: Event<"Chamber:Delegate">;
-}) {
-  await context.db.insert(chamber_Delegate).values({
-    id: event.log.id,
-    sender: event.args.sender,
-    tokenId: event.args.tokenId,
-    amount: event.args.amount,
-  });
-}
+const byNonce: Handler = (context, chamber, event, block) =>
+  refreshProposal(context, chamber, big(event.args.nonce), block);
 
-export async function handleDelegationUpdated({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:DelegationUpdated">;
-  event: Event<"Chamber:DelegationUpdated">;
-}) {
-  await context.db.insert(chamber_DelegationUpdated).values({
-    id: event.log.id,
-    holder: event.args.holder,
-    tokenId: event.args.tokenId,
-    amount: event.args.amount,
-  });
-}
+const byTransactionId: Handler = (context, chamber, event, block) =>
+  refreshProposal(context, chamber, big(event.args.transactionId), block);
 
-export async function handleDeposit({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Deposit">;
-  event: Event<"Chamber:Deposit">;
-}) {
-  await context.db.insert(chamber_Deposit).values({
-    id: event.log.id,
-    sender: event.args.sender,
-    owner: event.args.owner,
-    assets: event.args.assets,
-    shares: event.args.shares,
-  });
-}
+const vote: Handler = async (context, chamber, event, block) => {
+  const nonce = big(event.args.nonce);
+  await refreshVote(context, chamber, nonce, big(event.args.tokenId), block);
+  await refreshProposal(context, chamber, nonce, block);
+};
 
-export async function handleExecuteSetSeats({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:ExecuteSetSeats">;
-  event: Event<"Chamber:ExecuteSetSeats">;
-}) {
-  await context.db.insert(chamber_ExecuteSetSeats).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    seats: event.args.seats,
-  });
-}
+const seatChange: Handler = (context, chamber, _event, block) =>
+  refreshSeatState(context, chamber, block);
 
-export async function handleExecuteTransaction({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:ExecuteTransaction">;
-  event: Event<"Chamber:ExecuteTransaction">;
-}) {
-  await context.db.insert(chamber_ExecuteTransaction).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    nonce: event.args.nonce,
-  });
-}
+const chamberOnly: Handler = (context, chamber, _event, block) =>
+  refreshChamber(context, chamber, block);
 
-export async function handleInitialized({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Initialized">;
-  event: Event<"Chamber:Initialized">;
-}) {
-  await context.db.insert(chamber_Initialized).values({
-    id: event.log.id,
-    version: event.args.version,
-  });
-}
+const HANDLERS: Record<string, Handler | null> = {
+  Approval: null,
+  Transfer: async (context, chamber, event, block) => {
+    await applyShareTransfer(
+      context.db,
+      chamber,
+      addr(event.args.from),
+      addr(event.args.to),
+      big(event.args.value),
+    );
+    await refreshChamber(context, chamber, block);
+  },
+  Deposit: chamberOnly,
+  Withdraw: chamberOnly,
+  Received: chamberOnly,
+  ReceivedERC721: null,
+  Paused: chamberOnly,
+  Unpaused: chamberOnly,
+  Initialized: chamberOnly,
+  Upgraded: chamberOnly,
 
-export async function handleReceived({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Received">;
-  event: Event<"Chamber:Received">;
-}) {
-  await context.db.insert(chamber_Received).values({
-    id: event.log.id,
-    sender: event.args.sender,
-    amount: event.args.amount,
-  });
-}
+  Delegate: async (context, chamber, event, block) => {
+    await refreshDelegation(context, chamber, addr(event.args.sender), big(event.args.tokenId), block);
+    await refreshBoardState(context, chamber, block);
+  },
+  Undelegate: async (context, chamber, event, block) => {
+    await refreshDelegation(context, chamber, addr(event.args.sender), big(event.args.tokenId), block);
+    await refreshBoardState(context, chamber, block);
+  },
+  DelegationUpdated: (context, chamber, event, block) =>
+    refreshDelegation(
+      context,
+      chamber,
+      addr(event.args.holder),
+      big(event.args.tokenId),
+      block,
+      big(event.args.amount),
+    ),
 
-export async function handleRevokeConfirmation({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:RevokeConfirmation">;
-  event: Event<"Chamber:RevokeConfirmation">;
-}) {
-  await context.db.insert(chamber_RevokeConfirmation).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    nonce: event.args.nonce,
-  });
-}
+  SetSeats: seatChange,
+  ExecuteSetSeats: seatChange,
+  SeatUpdateCancelled: seatChange,
+  SeatsRecovered: seatChange,
+  InertSeatCleaned: seatChange,
 
-export async function handleSeatUpdateCancelled({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:SeatUpdateCancelled">;
-  event: Event<"Chamber:SeatUpdateCancelled">;
-}) {
-  await context.db.insert(chamber_SeatUpdateCancelled).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-  });
-}
+  SubmitTransaction: async (context, chamber, event, block) => {
+    await refreshProposal(context, chamber, big(event.args.nonce), block, {
+      proposerTokenId: big(event.args.tokenId),
+      target: addr(event.args.to),
+      value: big(event.args.value),
+      data: event.args.data as Hex,
+      submittedBlock: block.number,
+      submittedAt: block.timestamp,
+      submittedTx: event.transaction.hash,
+    });
+    await refreshChamber(context, chamber, block);
+  },
+  TransactionDeadlineSet: byNonce,
+  ProposalMetadataSet: byNonce,
+  TransactionCancelled: byNonce,
+  ConfirmTransaction: vote,
+  RevokeConfirmation: vote,
+  CancelTransaction: vote,
+  // An executed proposal can call anything on the chamber (seats, upgrade,
+  // transfers out), so refresh all chamber-level state.
+  ExecuteTransaction: async (context, chamber, event, block) => {
+    await refreshProposal(context, chamber, big(event.args.nonce), block, {
+      executedTx: event.transaction.hash,
+    });
+    await refreshSeatState(context, chamber, block);
+  },
+  TransactionSubmitted: byTransactionId,
+  TransactionConfirmed: byTransactionId,
+  TransactionExecuted: byTransactionId,
+  TransactionCancelVoted: byTransactionId,
 
-export async function handleSetSeats({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:SetSeats">;
-  event: Event<"Chamber:SetSeats">;
-}) {
-  await context.db.insert(chamber_SetSeats).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    numOfSeats: event.args.numOfSeats,
-  });
-}
+  DirectorOperatorSet: (context, chamber, event, block) =>
+    refreshOperator(
+      context,
+      chamber,
+      big(event.args.tokenId),
+      addr(event.args.owner),
+      addr(event.args.operator),
+      big(event.args.expiry),
+      block,
+    ),
+};
 
-export async function handleSubmitTransaction({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:SubmitTransaction">;
-  event: Event<"Chamber:SubmitTransaction">;
-}) {
-  await context.db.insert(chamber_SubmitTransaction).values({
-    id: event.log.id,
-    tokenId: event.args.tokenId,
-    nonce: event.args.nonce,
-    to: event.args.to,
-    value: event.args.value,
-    data: event.args.data,
-  });
-}
-
-export async function handleTransfer({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Transfer">;
-  event: Event<"Chamber:Transfer">;
-}) {
-  await context.db.insert(chamber_Transfer).values({
-    id: event.log.id,
-    from: event.args.from,
-    to: event.args.to,
-    value: event.args.value,
-  });
-
-  await applyShareTransfer(
-    context.db,
-    asHex(event.log.address),
-    asHex(event.args.from),
-    asHex(event.args.to),
-    event.args.value,
+/** JSON-safe copy of event args (bigint → decimal string). */
+function jsonArgs(args: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(
+    JSON.stringify(args, (_k, v) => (typeof v === "bigint" ? v.toString() : v)),
   );
 }
 
-export async function handleUndelegate({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Undelegate">;
-  event: Event<"Chamber:Undelegate">;
-}) {
-  await context.db.insert(chamber_Undelegate).values({
-    id: event.log.id,
-    sender: event.args.sender,
-    tokenId: event.args.tokenId,
-    amount: event.args.amount,
-  });
-}
+export function registerChamberHandlers(source: ChamberSource): void {
+  // Ponder types each "<Contract>:<Event>" key separately; the handlers above
+  // read args by name, so register them through a loose signature.
+  const on = ponder.on.bind(ponder) as unknown as (
+    name: string,
+    fn: (input: { event: AnyEvent; context: Ctx }) => Promise<void>,
+  ) => void;
 
-export async function handleWithdraw({
-  context,
-  event,
-}: {
-  context: Context<"Chamber:Withdraw">;
-  event: Event<"Chamber:Withdraw">;
-}) {
-  await context.db.insert(chamber_Withdraw).values({
-    id: event.log.id,
-    sender: event.args.sender,
-    receiver: event.args.receiver,
-    owner: event.args.owner,
-    assets: event.args.assets,
-    shares: event.args.shares,
-  });
+  for (const [name, handler] of Object.entries(HANDLERS)) {
+    on(`${source}:${name}`, async ({ event, context }) => {
+      const chamber = asHex(event.log.address);
+      const block: BlockRef = {
+        number: event.block.number,
+        timestamp: event.block.timestamp,
+      };
+      await context.db.insert(chamberEvent).values({
+        id: event.log.id,
+        chamberId: chamber,
+        name,
+        args: jsonArgs(event.args),
+        blockNumber: block.number,
+        timestamp: block.timestamp,
+        txHash: event.transaction.hash,
+        logIndex: event.log.logIndex,
+      });
+      if (handler) await handler(context, chamber, event, block);
+    });
+  }
 }

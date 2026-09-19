@@ -1,8 +1,7 @@
 # Chamber directory — “my chambers”
 #
 # Mine = creator on `chamber` OR current share balance on `chamberHolder`.
-# Directors are not indexed in v1 (getDirectors is an on-chain view;
-# DelegationUpdated is holder→tokenId weight, not NFT ownership).
+# Board / directors: see `boardSeats` in chamber.graphql.
 
 query Chamber($id: String!) {
   chamber(id: $id) {
